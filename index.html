@@ -664,35 +664,55 @@ function doLogin(){
     var pw=pwEl.value;
     if(!id||!pw){ errEl.textContent='請輸入帳號與密碼'; return; }
 
-    // ── 本地測試模式 ──
-    if(IS_LOCAL){
-      errEl.textContent='🔄 本地驗證中...';
+    // ── 內建帳號驗證（本地 + 雲端皆可用）──
+    function localLogin(mode){
       var u=users[id];
-      if(!u){ errEl.textContent='帳號不存在（本地模式）'; return; }
-      if(String(u.pw)!==String(pw)){ errEl.textContent='密碼錯誤（本地模式）'; return; }
+      if(!u){ errEl.textContent='帳號不存在'; return; }
+      if(String(u.pw)!==String(pw)){ errEl.textContent='密碼錯誤'; return; }
       currentUser=u;
       var overlay=document.getElementById('loginOverlay');
       if(overlay) overlay.classList.add('hidden');
       var chip=document.getElementById('apiStatusChip');
-      if(chip){ chip.textContent='🟡 本地測試模式'; chip.style.display='block'; chip.style.background='rgba(243,156,18,.25)'; }
+      if(chip){
+        chip.textContent=mode==='local'?'🟡 本地測試模式':'🟡 離線模式（使用內建帳號）';
+        chip.style.display='block';
+        chip.style.background='rgba(243,156,18,.25)';
+      }
       if(u.firstLogin){ showForcePwChange(); return; }
       afterLogin();
+    }
+
+    // ── 本地環境：直接用內建帳號 ──
+    if(IS_LOCAL){
+      errEl.textContent='🔄 驗證中...';
+      localLogin('local');
       return;
     }
 
-    // ── 雲端模式 ──
+    // ── 雲端環境：先嘗試 API，失敗則 fallback 內建帳號 ──
     errEl.textContent='🔄 驗證中...';
-    apiCall('login',{id:id,pw:pw}).then(function(u){
-      if(!u){ errEl.textContent='帳號或密碼錯誤'; return; }
+    var timeout=new Promise(function(_,reject){
+      setTimeout(function(){ reject(new Error('timeout')); }, 5000);
+    });
+    Promise.race([apiCall('login',{id:id,pw:pw}), timeout]).then(function(u){
+      if(!u){
+        // API 回傳無此帳號，嘗試內建帳號
+        localLogin('offline');
+        return;
+      }
       currentUser=u;
       users[id]=u;
       var overlay=document.getElementById('loginOverlay');
       if(overlay) overlay.classList.add('hidden');
+      var chip=document.getElementById('apiStatusChip');
+      if(chip){ chip.textContent='🟢 雲端連線正常'; chip.style.display='block'; chip.style.background='rgba(39,174,96,.25)'; }
       logAction('登入系統');
       if(u.firstLogin){ showForcePwChange(); return; }
       loadAllData().then(function(){ afterLogin(); }).catch(function(){ afterLogin(); });
     }).catch(function(e){
-      errEl.textContent='連線失敗，請確認網路後重試';
+      // API 失敗（超時或錯誤）→ fallback 內建帳號
+      console.warn('API登入失敗，使用內建帳號:', e.message);
+      localLogin('offline');
     });
   }catch(e){
     alert('登入發生錯誤：'+e.message);
@@ -709,18 +729,19 @@ function doChangePw(){
     if(p1.length<6){ err.textContent='密碼至少需 6 碼'; return; }
     if(p1!==p2){ err.textContent='兩次密碼不一致'; return; }
 
-    // 本地測試模式
-    if(IS_LOCAL){
+    // 本地更新
+    function localChangePw(){
       if(users[currentUser.id]){ users[currentUser.id].pw=p1; users[currentUser.id].firstLogin=false; }
       currentUser.pw=p1; currentUser.firstLogin=false;
       saveState('sys_users',users);
       var modal=document.getElementById('pwModal');
       if(modal) modal.classList.add('hidden');
       afterLogin();
-      return;
     }
 
-    // 雲端模式
+    if(IS_LOCAL){ localChangePw(); return; }
+
+    // 雲端模式（失敗則 fallback）
     err.textContent='🔄 更新中...';
     apiCall('changePw',{id:currentUser.id,newPw:p1}).then(function(){
       currentUser.pw=p1; currentUser.firstLogin=false;
@@ -729,7 +750,8 @@ function doChangePw(){
       if(modal) modal.classList.add('hidden');
       loadAllData().then(function(){ afterLogin(); }).catch(function(){ afterLogin(); });
     }).catch(function(e){
-      err.textContent='更新失敗，請重試';
+      console.warn('雲端改密碼失敗，使用本地模式');
+      localChangePw();
     });
   }catch(e){
     alert('修改密碼發生錯誤：'+e.message);
