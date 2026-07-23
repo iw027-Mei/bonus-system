@@ -524,41 +524,33 @@ const API_URL='https://script.google.com/macros/s/AKfycbzBn1lInbRR5VxSHk1YY7sged
 let _apiCache={};  // 本地快取，減少 API 呼叫次數
 let _apiOnline=true; // 連線狀態
 
-// 通用 API 呼叫（POST）
-async function apiCall(action, params={}){
-  try{
-    const res=await fetch(API_URL,{
-      method:'POST',
-      body:JSON.stringify({action,...params}),
-    });
-    const json=await res.json();
+// 通用 API 呼叫（GET，Apps Script 使用 GET）
+function apiCall(action, params){
+  params=params||{};
+  var allParams=Object.assign({action:action},params);
+  var qs=Object.keys(allParams).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(
+      typeof allParams[k]==='object'?JSON.stringify(allParams[k]):allParams[k]
+    );
+  }).join('&');
+  var url=API_URL+'?'+qs;
+  return fetch(url).then(function(res){
+    return res.json();
+  }).then(function(json){
     if(!json.success) throw new Error(json.error||'API錯誤');
     _apiOnline=true;
+    showApiStatus(true);
     return json.data;
-  }catch(e){
+  }).catch(function(e){
     console.error('API錯誤:',e);
     _apiOnline=false;
     showApiStatus(false);
     throw e;
-  }
+  });
 }
 
-// 通用 API 呼叫（GET）
-async function apiGet(action, params={}){
-  try{
-    const qs=new URLSearchParams({action,...params}).toString();
-    const res=await fetch(API_URL+'?'+qs);
-    const json=await res.json();
-    if(!json.success) throw new Error(json.error||'API錯誤');
-    _apiOnline=true;
-    return json.data;
-  }catch(e){
-    console.error('API GET錯誤:',e);
-    _apiOnline=false;
-    showApiStatus(false);
-    throw e;
-  }
-}
+// 相容舊版呼叫
+function apiGet(action,params){ return apiCall(action,params); }
 
 function showApiStatus(online){
   const chip=document.getElementById('apiStatusChip');
@@ -823,7 +815,7 @@ function switchTab(id,btn){
 async function loadAllData(){
   try{
     showLoadingOverlay(true);
-    const all=await apiCall('getAllData',{});
+    const all=await apiCall('getAllData',{}).catch(function(){ return null; });
     if(all){
       // 更新流程狀態
       if(all.flow) Object.assign(flowConfig, all.flow);
@@ -997,7 +989,7 @@ async function advanceStage(){
   if(flowConfig.stage>=4) return;
   flowConfig.stage++;
   try{
-    await apiCall('setFlow',{flowConfig});
+    await apiCall('setFlow',{flowConfig:JSON.stringify(flowConfig)});
     saveState('sys_flow',flowConfig);
     logAction('推進流程階段',`階段${flowConfig.stage}`);
   }catch(e){ flowConfig.stage--; alert('儲存失敗，請重試'); return; }
@@ -1281,7 +1273,7 @@ async function saveFlowConfig(){
   flowConfig.satDeadline=document.getElementById('satDeadline').value;
   flowConfig.mgrDeadline=document.getElementById('mgrDeadline').value;
   try{
-    await apiCall('setFlow',{flowConfig});
+    await apiCall('setFlow',{flowConfig:JSON.stringify(flowConfig)});
     saveState('sys_flow',flowConfig);
     renderFlowStatus();
     logAction('更新流程設定',flowConfig.quarter);
@@ -1418,7 +1410,7 @@ ${names}
       for(const r of myRatees){
         supportData[r.id].locked=true;
         supportData[r.id].lockedAt=now;
-        await apiCall('setSupport',{rateeId:r.id,rows:supportData[r.id].rows,ratio:supportData[r.id].ratio,locked:true,lockedAt:now});
+        await apiCall('setSupport',{rateeId:r.id,rows:JSON.stringify(supportData[r.id].rows),ratio:supportData[r.id].ratio,locked:true,lockedAt:now});
       }
       saveState('sys_support',supportData);
       logAction('統一送出支援比重',myRatees.map(r=>r.id).join(','));
@@ -1463,7 +1455,7 @@ function updateSupportRow(rateeId,idx,field,val){
   if(el) el.style.color=total>50?'var(--danger)':'var(--primary)';
   saveState('sys_support',supportData);
   // 即時同步草稿到雲端（未鎖定狀態）
-  apiCall('setSupport',{rateeId,rows:supportData[rateeId].rows,ratio:total,locked:false,lockedAt:''}).catch(()=>{});
+  apiCall('setSupport',{rateeId:rateeId,rows:JSON.stringify(supportData[rateeId].rows),ratio:total,locked:false,lockedAt:''}).catch(()=>{});
 }
 function addSupportRow(rateeId){
   if(!supportData[rateeId]) supportData[rateeId]={rows:[],ratio:0,locked:false};
@@ -1494,7 +1486,7 @@ function lockSupport(rateeId){
     supportData[rateeId].locked=true;
     supportData[rateeId].lockedAt=now;
     try{
-      await apiCall('setSupport',{rateeId,rows:supportData[rateeId].rows,ratio:total,locked:true,lockedAt:now});
+      await apiCall('setSupport',{rateeId:rateeId,rows:JSON.stringify(supportData[rateeId].rows),ratio:total,locked:true,lockedAt:now});
       saveState('sys_support',supportData);
       logAction('送出支援比重',`${rateeId} 合計${total}%`);
     }catch(e){ supportData[rateeId].locked=false; alert('儲存失敗，請重試'); return; }
@@ -1555,7 +1547,7 @@ function submitSat(rateeId){
   const comm=parseInt(document.getElementById(`sat_comm_${rateeId}`).value);
   showConfirm('確認提交評分',`確定要提交對「${ratees.find(r=>r.id===rateeId)?.name}」的服務滿意度評分？送出後不得修改。`,async()=>{
     try{
-      await apiCall('setSat',{rateeId,raterId:u.id,speed,prof,comm,raterName:u.name});
+      await apiCall('setSat',{rateeId:rateeId,raterId:u.id,speed:speed,prof:prof,comm:comm,raterName:u.name});
       if(!satData[rateeId]) satData[rateeId]={};
       satData[rateeId][u.id]={speed,prof,comm,submittedAt:new Date().toLocaleString('zh-TW'),raterName:u.name};
       saveState('sys_sat',satData);
@@ -1704,7 +1696,7 @@ async function submitMgr(rateeId){
   }
   showConfirm('確認提交主管評分',`確定要提交對「${ratees.find(r=>r.id===rateeId)?.name}」的主管加權評分？送出後不得修改。`,()=>{
     try{
-      await apiCall('setMgr',{rateeId,...vals,submittedBy:u.id,submittedByName:u.name});
+      await apiCall('setMgr',{rateeId:rateeId,complex:vals.complex,initiative:vals.initiative,collab:vals.collab,expertise:vals.expertise,note:vals.note||'',submittedBy:u.id,submittedByName:u.name});
       mgrData[rateeId]={...vals,submittedBy:u.id,submittedByName:u.name,submittedAt:new Date().toLocaleString('zh-TW')};
       saveState('sys_mgr',mgrData);
       logAction('提交主管加權評分',`受評:${rateeId}`);
