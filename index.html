@@ -206,7 +206,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 <div class="form-group"><label>新密碼</label><input id="newPw1" placeholder="請輸入新密碼（至少6碼）" type="password"/></div>
 <div class="form-group"><label>確認新密碼</label><input id="newPw2" placeholder="再次輸入新密碼" type="password"/></div>
 <div id="pwErr" style="color:var(--danger);font-size:.82rem;margin-bottom:8px;"></div>
-<button class="btn btn-primary" onclick="doChangePw()" style="width:100%;padding:11px;">確認修改</button>
+<button class="btn btn-primary" style="width:100%;padding:11px;" onclick="doChangePw()">確認修改</button>
 </div>
 </div>
 <!-- ══════════════════════════════════════════
@@ -1783,38 +1783,6 @@ window.onload=function(){
   setInterval(()=>{ if(currentUser) loadAllData().then(()=>renderAll()).catch(()=>{}); }, 5*60*1000);
 };
 </script>
-<script>
-// ── 安全事件綁定（避免 onclick 在 file:// 協議失效）──
-document.addEventListener('DOMContentLoaded', function(){
-  // 登入按鈕
-  var loginBtn = document.querySelector('#loginOverlay .btn-primary');
-  if(loginBtn){
-    loginBtn.removeAttribute('onclick');
-    loginBtn.addEventListener('click', function(e){
-      e.preventDefault();
-      doLogin();
-    });
-  }
-  // 登入輸入框 Enter 鍵
-  ['loginId','loginPw'].forEach(function(id){
-    var el=document.getElementById(id);
-    if(el){
-      el.removeAttribute('onkeydown');
-      el.addEventListener('keydown',function(e){
-        if(e.key==='Enter'){ e.preventDefault(); doLogin(); }
-      });
-    }
-  });
-  // 改密碼按鈕
-  var pwBtn = document.querySelector('#pwModal .btn-primary');
-  if(pwBtn){
-    pwBtn.removeAttribute('onclick');
-    pwBtn.addEventListener('click', function(e){
-      e.preventDefault();
-      doChangePw();
-    });
-  }
-});
-</script>
+
 </body>
 </html>
