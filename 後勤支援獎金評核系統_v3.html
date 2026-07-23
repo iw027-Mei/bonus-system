@@ -1,0 +1,1303 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>後勤支援獎金評核系統</title>
+<style>
+:root{
+  --primary:#1a4f8a;--primary-light:#2d6db5;--primary-dark:#0f3060;
+  --accent:#e8a020;--success:#27ae60;--danger:#e74c3c;--warning:#f39c12;
+  --info:#2980b9;--purple:#8e44ad;
+  --bg:#f0f4f8;--card:#fff;--border:#d0dce8;--text:#2c3e50;--text-light:#6b7c93;
+  --shadow:0 2px 12px rgba(26,79,138,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── Overlay ── */
+.overlay{position:fixed;inset:0;background:rgba(10,25,50,.78);z-index:9000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);}
+.overlay.hidden{display:none;}
+.modal{background:#fff;border-radius:16px;padding:36px 40px;width:460px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal h2{color:var(--primary);font-size:1.25rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.modal p{color:var(--text-light);font-size:.84rem;margin-bottom:22px;}
+
+/* ── Header ── */
+.header{background:linear-gradient(135deg,var(--primary-dark),var(--primary-light));color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 18px rgba(26,79,138,.3);position:sticky;top:0;z-index:100;}
+.header-title{font-size:1.2rem;font-weight:800;letter-spacing:.5px;}
+.header-sub{font-size:.76rem;opacity:.82;margin-top:2px;}
+.header-right{display:flex;align-items:center;gap:10px;}
+.user-chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.user-chip:hover{background:rgba(255,255,255,.25);}
+
+/* ── Sidebar + Main ── */
+.app-layout{display:flex;min-height:calc(100vh - 60px);}
+.sidebar{width:220px;background:var(--primary-dark);color:#fff;flex-shrink:0;padding:16px 0;}
+.sidebar-section{font-size:.7rem;font-weight:700;opacity:.5;padding:14px 18px 6px;letter-spacing:1px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:.88rem;cursor:pointer;transition:background .15s;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(255,255,255,.08);}
+.nav-item.active{background:rgba(255,255,255,.12);border-left-color:var(--accent);font-weight:700;}
+.nav-item .icon{font-size:1rem;width:20px;text-align:center;}
+.main{flex:1;padding:20px 24px;overflow-y:auto;}
+
+/* ── Page ── */
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-size:1.15rem;font-weight:800;color:var(--primary);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.page-title .badge{font-size:.72rem;background:var(--accent);color:#fff;border-radius:12px;padding:2px 10px;font-weight:600;}
+
+/* ── Cards ── */
+.card{background:var(--card);border-radius:12px;padding:18px 22px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:16px;}
+.card-title{font-size:.95rem;font-weight:700;color:var(--primary);border-left:4px solid var(--accent);padding-left:10px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+@media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}.sidebar{display:none;}}
+
+/* ── Stat Cards ── */
+.stat-card{background:var(--card);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);border:1px solid var(--border);display:flex;align-items:center;gap:14px;}
+.stat-icon{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.stat-val{font-size:1.6rem;font-weight:800;line-height:1;}
+.stat-label{font-size:.78rem;color:var(--text-light);margin-top:3px;}
+
+/* ── Form ── */
+label{font-size:.82rem;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;}
+input[type=text],input[type=number],input[type=password],select,textarea{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;color:var(--text);background:#f8fafc;transition:border .2s;font-family:inherit;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary-light);background:#fff;}
+textarea{resize:vertical;min-height:56px;}
+.form-group{margin-bottom:12px;}
+.tip{font-size:.76rem;color:var(--text-light);margin-top:3px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* ── Buttons ── */
+.btn{padding:8px 20px;border-radius:8px;border:none;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{background:var(--primary-light);}
+.btn-success{background:var(--success);color:#fff;}
+.btn-success:hover{background:#219a52;}
+.btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary);}
+.btn-outline:hover{background:#e8f0fb;}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{background:#c0392b;}
+.btn-warn{background:var(--warning);color:#fff;}
+.btn-sm{padding:5px 12px;font-size:.78rem;}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+
+/* ── Table ── */
+.tbl{width:100%;border-collapse:collapse;font-size:.85rem;}
+.tbl th{background:#e8f0fb;color:var(--primary);padding:9px 12px;text-align:left;font-weight:700;white-space:nowrap;}
+.tbl td{padding:8px 12px;border-bottom:1px solid #eef2f7;vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:#f8fafc;}
+.tbl-wrap{overflow-x:auto;}
+.td-num{text-align:right;font-weight:700;color:var(--primary);}
+.td-center{text-align:center;}
+
+/* ── Alerts ── */
+.alert{padding:10px 14px;border-radius:8px;font-size:.84rem;margin-bottom:10px;display:flex;align-items:flex-start;gap:8px;}
+.alert-info{background:#e8f0fb;border-left:4px solid var(--primary);color:var(--primary);}
+.alert-warn{background:#fef9e7;border-left:4px solid var(--warning);color:#7d6608;}
+.alert-danger{background:#fdf2f2;border-left:4px solid var(--danger);color:#922b21;}
+.alert-success{background:#eafaf1;border-left:4px solid var(--success);color:#1e8449;}
+.alert-purple{background:#f5eef8;border-left:4px solid var(--purple);color:#6c3483;}
+
+/* ── Tags ── */
+.tag{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.73rem;font-weight:700;}
+.tag-admin{background:#fff8e8;color:#b7770d;border:1px solid #f5c842;}
+.tag-mgr{background:#e8f0fb;color:var(--primary);border:1px solid #b0c8e8;}
+.tag-sat{background:#eafaf1;color:var(--success);border:1px solid #a9dfbf;}
+.tag-locked{background:#fdf2f2;color:var(--danger);border:1px solid #f5b7b1;}
+.tag-pending{background:#fef9e7;color:#7d6608;border:1px solid #f9e79f;}
+.tag-done{background:#eafaf1;color:var(--success);border:1px solid #a9dfbf;}
+.tag-g5{background:#e8f0fb;color:var(--primary);}
+.tag-g67{background:#e8f8f5;color:#1a8a6a;}
+.tag-g8{background:#fef9e7;color:#7d6608;}
+
+/* ── Slider ── */
+.slider-wrap{display:flex;align-items:center;gap:10px;}
+input[type=range]{flex:1;-webkit-appearance:none;height:6px;border-radius:3px;background:#d0dce8;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--primary);cursor:pointer;box-shadow:0 2px 6px rgba(26,79,138,.3);}
+.slider-val{min-width:44px;text-align:center;font-weight:700;color:var(--primary);font-size:.95rem;background:#e8f0fb;border-radius:6px;padding:3px 7px;}
+
+/* ── Score Buttons ── */
+.score-btns{display:flex;gap:5px;}
+.sbtn{width:38px;height:38px;border-radius:8px;border:2px solid var(--border);background:#f8fafc;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .15s;color:var(--text);}
+.sbtn:hover{border-color:var(--primary-light);background:#e8f0fb;}
+.sbtn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.sbtn:disabled{opacity:.35;cursor:not-allowed;}
+
+/* ── Result Panel ── */
+.result-panel{background:linear-gradient(135deg,var(--primary-dark),var(--primary-light));color:#fff;border-radius:14px;padding:22px 26px;box-shadow:0 8px 28px rgba(26,79,138,.25);margin-bottom:18px;}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
+.ri{background:rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;}
+.ri .rl{font-size:.74rem;opacity:.8;margin-bottom:4px;}
+.ri .rv{font-size:1.4rem;font-weight:800;}
+.ri .ru{font-size:.74rem;opacity:.72;}
+.ri.hl{background:rgba(232,160,32,.25);border:1.5px solid rgba(232,160,32,.5);}
+.prog-wrap{margin-top:14px;}
+.prog-label{display:flex;justify-content:space-between;font-size:.78rem;opacity:.85;margin-bottom:4px;}
+.prog-bar{height:8px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:4px;transition:width .5s ease;background:linear-gradient(90deg,#e8a020,#f5c842);}
+.status-badge{display:inline-block;padding:4px 13px;border-radius:20px;font-size:.78rem;font-weight:700;margin-top:10px;}
+.sb-pass{background:rgba(39,174,96,.25);color:#a8f0c6;border:1px solid rgba(39,174,96,.4);}
+.sb-fail{background:rgba(231,76,60,.25);color:#f5b7b1;border:1px solid rgba(231,76,60,.4);}
+.sb-warn{background:rgba(243,156,18,.25);color:#fde8a0;border:1px solid rgba(243,156,18,.4);}
+
+/* ── Flow Steps ── */
+.flow-steps{display:flex;gap:0;margin-bottom:20px;flex-wrap:wrap;}
+.flow-step{flex:1;min-width:140px;padding:12px 16px;background:#e8f0fb;border-right:3px solid #fff;position:relative;font-size:.82rem;}
+.flow-step:last-child{border-right:none;border-radius:0 8px 8px 0;}
+.flow-step:first-child{border-radius:8px 0 0 8px;}
+.flow-step.done{background:#eafaf1;}
+.flow-step.active-step{background:var(--primary);color:#fff;}
+.flow-step.locked{background:#fdf2f2;opacity:.7;}
+.flow-step .step-num{font-size:.7rem;font-weight:700;opacity:.7;margin-bottom:3px;}
+.flow-step .step-name{font-weight:700;}
+.flow-step .step-status{font-size:.7rem;margin-top:3px;}
+
+/* ── Divider ── */
+.divider{border:none;border-top:1.5px solid var(--border);margin:14px 0;}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:3px;margin-bottom:0;flex-wrap:wrap;}
+.tab-btn{padding:8px 16px;border-radius:8px 8px 0 0;border:1.5px solid var(--border);background:#e8f0fb;font-size:.84rem;font-weight:600;cursor:pointer;color:var(--text-light);transition:all .15s;border-bottom:none;}
+.tab-btn.active{background:var(--card);color:var(--primary);}
+.tab-content{display:none;background:var(--card);border:1.5px solid var(--border);border-radius:0 12px 12px 12px;padding:18px 22px;margin-bottom:16px;}
+.tab-content.active{display:block;}
+
+/* ── Password Change ── */
+#pwModal .modal{width:400px;}
+
+/* ── Confirm Modal ── */
+#confirmModal .modal{width:380px;}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:#f0f4f8;}
+::-webkit-scrollbar-thumb{background:#b0c8e8;border-radius:3px;}
+
+@media print{.sidebar,.header .header-right,.btn-group,.no-print{display:none!important;}body{background:#fff;}.card{box-shadow:none;border:1px solid #ccc;}}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     登入 Modal
+══════════════════════════════════════════ -->
+<div class="overlay" id="loginOverlay">
+  <div class="modal">
+    <h2>🏆 後勤支援獎金評核系統</h2>
+    <p>請輸入帳號與密碼登入</p>
+    <div class="form-group"><label>帳號</label><input type="text" id="loginId" placeholder="工號（如 IW026）" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="form-group"><label>密碼</label><input type="password" id="loginPw" placeholder="密碼" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div id="loginErr" style="color:var(--danger);font-size:.82rem;margin-bottom:8px;"></div>
+    <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="doLogin()">登入</button>
+    <div style="font-size:.75rem;color:var(--text-light);margin-top:12px;text-align:center;">首次登入請使用預設密碼 123456，登入後系統將要求修改密碼</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     強制改密碼 Modal
+══════════════════════════════════════════ -->
+<div class="overlay hidden" id="pwModal">
+  <div class="modal" id="pwModalBox">
+    <h2>🔑 首次登入 — 請修改密碼</h2>
+    <p>為確保帳號安全，請將預設密碼修改為個人密碼（至少 6 碼）</p>
+    <div class="form-group"><label>新密碼</label><input type="password" id="newPw1" placeholder="請輸入新密碼（至少6碼）"></div>
+    <div class="form-group"><label>確認新密碼</label><input type="password" id="newPw2" placeholder="再次輸入新密碼"></div>
+    <div id="pwErr" style="color:var(--danger);font-size:.82rem;margin-bottom:8px;"></div>
+    <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="doChangePw()">確認修改</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     確認 Modal
+══════════════════════════════════════════ -->
+<div class="overlay hidden" id="confirmModal">
+  <div class="modal" style="width:360px;">
+    <h2 id="confirmTitle">確認操作</h2>
+    <p id="confirmMsg" style="margin-bottom:20px;color:var(--text);font-size:.9rem;"></p>
+    <div class="btn-group">
+      <button class="btn btn-danger" id="confirmOk">確認</button>
+      <button class="btn btn-outline" onclick="closeConfirm()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     Header
+══════════════════════════════════════════ -->
+<div class="header">
+  <div>
+    <div class="header-title">🏆 後勤支援獎金評核系統</div>
+    <div class="header-sub">依據「後勤支援獎金辦法」｜ 主管審核：鄭聯貞 ｜ 核准：蔡孝德</div>
+  </div>
+  <div class="header-right">
+    <div id="flowStatusChip" style="font-size:.78rem;background:rgba(255,255,255,.15);border-radius:12px;padding:4px 12px;display:none;"></div>
+    <div class="user-chip" id="userChip" onclick="showUserMenu()">
+      <span id="userChipName">未登入</span>▾
+    </div>
+    <div id="userMenu" style="display:none;position:absolute;top:56px;right:16px;background:#fff;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:8px;min-width:160px;z-index:200;">
+      <div style="padding:8px 12px;font-size:.82rem;color:var(--text-light);border-bottom:1px solid var(--border);margin-bottom:4px;" id="userMenuInfo"></div>
+      <div class="nav-item" style="color:var(--text);border-radius:6px;" onclick="openChangePw()">🔑 修改密碼</div>
+      <div class="nav-item" style="color:var(--danger);border-radius:6px;" onclick="doLogout()">🚪 登出</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     App Layout
+══════════════════════════════════════════ -->
+<div class="app-layout">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div id="navAdmin" style="display:none;">
+      <div class="sidebar-section">系統管理</div>
+      <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="icon">📊</span>總覽儀表板</div>
+      <div class="nav-item" onclick="showPage('admin-users')" id="nav-admin-users"><span class="icon">👥</span>人員管理</div>
+      <div class="nav-item" onclick="showPage('admin-flow')" id="nav-admin-flow"><span class="icon">⚙️</span>流程控制</div>
+      <div class="nav-item" onclick="showPage('admin-results')" id="nav-admin-results"><span class="icon">📋</span>評核結果</div>
+    </div>
+    <div id="navMgr" style="display:none;">
+      <div class="sidebar-section">主管功能</div>
+      <div class="nav-item active" onclick="showPage('mgr-support')" id="nav-mgr-support"><span class="icon">📝</span>支援比重設定</div>
+      <div class="nav-item" onclick="showPage('mgr-score')" id="nav-mgr-score"><span class="icon">⭐</span>主管加權評分</div>
+      <div class="nav-item" onclick="showPage('mgr-view')" id="nav-mgr-view"><span class="icon">👁️</span>查看評分結果</div>
+    </div>
+    <div id="navSat" style="display:none;">
+      <div class="sidebar-section">評分功能</div>
+      <div class="nav-item active" onclick="showPage('sat-score')" id="nav-sat-score"><span class="icon">📝</span>服務滿意度評分</div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- ══ 總覽儀表板 ══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">📊 總覽儀表板</div>
+
+      <!-- 流程狀態 -->
+      <div class="card">
+        <div class="card-title">🔄 當季作業流程狀態 <span id="quarterLabel" class="tag tag-admin"></span></div>
+        <div class="flow-steps" id="flowStepsBar"></div>
+        <div id="flowActionArea"></div>
+      </div>
+
+      <!-- 統計 -->
+      <div class="grid-4" id="statsGrid" style="margin-bottom:16px;"></div>
+
+      <!-- 評核進度表 -->
+      <div class="card">
+        <div class="card-title">📋 受評者評核進度</div>
+        <div class="tbl-wrap">
+          <table class="tbl" id="progressTable">
+            <thead><tr>
+              <th>工號</th><th>姓名</th><th>部門</th><th>職等</th>
+              <th class="td-center">支援比重</th>
+              <th class="td-center">服務滿意度</th>
+              <th class="td-center">主管評分</th>
+              <th class="td-center">綜合得分率</th>
+              <th class="td-num">預估獎金</th>
+              <th class="td-center">狀態</th>
+            </tr></thead>
+            <tbody id="progressBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 人員管理 ══ -->
+    <div class="page" id="page-admin-users">
+      <div class="page-title">👥 人員管理</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('ut1',this)">系統管理者</button>
+        <button class="tab-btn" onclick="switchTab('ut2',this)">評分者</button>
+        <button class="tab-btn" onclick="switchTab('ut3',this)">受評者</button>
+      </div>
+      <div class="tab-content active" id="ut1">
+        <div class="card-title">👑 系統管理者名單</div>
+        <div class="tbl-wrap"><table class="tbl" id="adminUserTable">
+          <thead><tr><th>工號</th><th>姓名</th><th>單位</th><th>權限說明</th><th class="td-center">操作</th></tr></thead>
+          <tbody id="adminUserBody"></tbody>
+        </table></div>
+      </div>
+      <div class="tab-content" id="ut2">
+        <div class="card-title">🖊️ 評分者名單</div>
+        <div class="tbl-wrap"><table class="tbl" id="raterTable">
+          <thead><tr><th>工號</th><th>姓名</th><th>單位</th><th>評分類型</th><th>權限說明</th><th class="td-center">操作</th></tr></thead>
+          <tbody id="raterBody"></tbody>
+        </table></div>
+      </div>
+      <div class="tab-content" id="ut3">
+        <div class="card-title">👤 受評者名單</div>
+        <div class="tbl-wrap"><table class="tbl" id="rateeTable">
+          <thead><tr><th>工號</th><th>姓名</th><th>部門</th><th>職等</th><th>職稱</th><th>到職日</th><th>主管評分主管</th><th>服務滿意度評分者</th></tr></thead>
+          <tbody id="rateeBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ══ 流程控制 ══ -->
+    <div class="page" id="page-admin-flow">
+      <div class="page-title">⚙️ 流程控制</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📅 季度設定</div>
+          <div class="form-group"><label>評核季度</label>
+            <select id="adminQuarter">
+              <option value="2026Q1">2026 Q1（1–3月）</option>
+              <option value="2026Q2">2026 Q2（4–6月）</option>
+              <option value="2026Q3" selected>2026 Q3（7–9月）</option>
+              <option value="2026Q4">2026 Q4（10–12月）</option>
+            </select>
+          </div>
+          <div class="form-group"><label>支援比重設定截止日</label><input type="text" id="supportDeadline" placeholder="例：2026-07-10"></div>
+          <div class="form-group"><label>服務滿意度評分截止日</label><input type="text" id="satDeadline" placeholder="例：2026-09-30"></div>
+          <div class="form-group"><label>主管加權評分截止日</label><input type="text" id="mgrDeadline" placeholder="例：2026-10-07"></div>
+          <div class="btn-group"><button class="btn btn-primary" onclick="saveFlowConfig()">💾 儲存設定</button></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🔄 流程階段控制</div>
+          <div class="alert alert-info">ℹ️ 各階段需依序開啟，開啟後不可回退。超過截止日後主管無法再設定，需由管理者重新開放。</div>
+          <div id="flowControlBtns"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 流程說明（依辦法 §3.2.2 / §3.2.3）</div>
+        <table class="tbl">
+          <thead><tr><th>步驟</th><th>說明</th><th>執行者</th><th>規則</th></tr></thead>
+          <tbody>
+            <tr><td><b>步驟1</b><br>支援比重設定</td><td>每季季初，管理者開放主管設定支援比重，設定後鎖定不得修改</td><td>主管加權評分之評分主管</td><td>10%~50%，合計≤50%，超過截止日需管理者重新開放</td></tr>
+            <tr><td><b>步驟2</b><br>服務滿意度評分</td><td>確認支援比重後，發出評核通知，由服務滿意度評分者進行評分，送出後不得修改</td><td>服務滿意度評分者</td><td>回收率≥60%，未達延期補發；送出後不可修改</td></tr>
+            <tr><td><b>步驟3</b><br>主管加權評分</td><td>服務滿意度全部完成後，進入主管加權評分，頁面呈現上一階段結果，評分後即時計算</td><td>主管加權評分之評分主管</td><td>每項1~5分，平均4.5分以上人數≤30%，2.5分以下需填具體描述≥50字</td></tr>
+            <tr><td><b>步驟4</b><br>結果匯整發布</td><td>全部完成後，匯整評分結果及獎金金額，發出通知給管理者及最高權限管理者</td><td>系統自動 / 管理者</td><td>依辦法計算，連兩季未達50%啟動績效改善計畫</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ 評核結果 ══ -->
+    <div class="page" id="page-admin-results">
+      <div class="page-title">📋 評核結果總覽</div>
+      <div class="card">
+        <div class="card-title">🔢 獎金計算結果</div>
+        <div class="tbl-wrap">
+          <table class="tbl" id="resultsTable">
+            <thead><tr>
+              <th>工號</th><th>姓名</th><th>部門</th><th>職等</th><th>職務定價</th>
+              <th class="td-center">支援比重</th><th class="td-center">在職天數比</th>
+              <th class="td-center">服務滿意度</th><th class="td-center">主管評分</th>
+              <th class="td-center">綜合得分率</th>
+              <th class="td-num">固定獎金(10%)</th><th class="td-num">浮動獎金(90%)</th>
+              <th class="td-num">本季獎金</th><th class="td-center">發放狀態</th>
+            </tr></thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+        <div class="btn-group no-print">
+          <button class="btn btn-success" onclick="exportResultCSV()">📊 匯出 CSV</button>
+          <button class="btn btn-outline" onclick="window.print()">🖨️ 列印</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 主管：支援比重設定 ══ -->
+    <div class="page" id="page-mgr-support">
+      <div class="page-title">📝 支援比重設定 <span class="badge">§3.2.2</span></div>
+      <div id="mgrSupportAlert"></div>
+      <div id="mgrSupportContent"></div>
+    </div>
+
+    <!-- ══ 主管：加權評分 ══ -->
+    <div class="page" id="page-mgr-score">
+      <div class="page-title">⭐ 主管加權評分 <span class="badge">§3.2.3.3</span></div>
+      <div id="mgrScoreAlert"></div>
+      <div id="mgrScoreContent"></div>
+    </div>
+
+    <!-- ══ 主管：查看結果 ══ -->
+    <div class="page" id="page-mgr-view">
+      <div class="page-title">👁️ 查看評分結果</div>
+      <div id="mgrViewContent"></div>
+    </div>
+
+    <!-- ══ 服務滿意度評分 ══ -->
+    <div class="page" id="page-sat-score">
+      <div class="page-title">📝 服務滿意度評分 <span class="badge">§3.2.3.2</span></div>
+      <div id="satScoreAlert"></div>
+      <div id="satScoreContent"></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app-layout -->
+
+<script>
+// ══════════════════════════════════════════
+// ① 資料層（從 Excel 完整匯入）
+// ══════════════════════════════════════════
+const PRICE_TABLE = { legal:{g5:40000,g67:50000,g8:60000}, other:{g5:45000,g67:55000,g8:60000} };
+
+// 職等對應職能類別
+function getJobFunc(dept){
+  if(['法務部','法務'].some(k=>dept.includes(k))) return 'legal';
+  if(['資訊','系統'].some(k=>dept.includes(k))) return 'legal';
+  return 'other';
+}
+function getGradeKey(g){ return g<=5?'g5':g<=7?'g67':'g8'; }
+function getJobPrice(dept,grade){ return PRICE_TABLE[getJobFunc(dept)][getGradeKey(grade)]; }
+
+// 系統管理者
+const ADMIN_USERS_INIT = [
+  {id:'IW026',pw:'123456',name:'鄭聯貞',unit:'人資發展中心',role:'admin',perm:'主管加權評分之評分主管兼系統管理者，可查閱及轉出評分結果',firstLogin:true},
+  {id:'IW027',pw:'123456',name:'賴郁文',unit:'人資課',role:'superadmin',perm:'最高權限管理者，擁有系統全部權限',firstLogin:true},
+  {id:'IW029',pw:'123456',name:'邱子綢',unit:'人資課',role:'admin',perm:'系統管理者，可查閱及轉出評分結果',firstLogin:true},
+];
+
+// 評分者（含主管加權 & 服務滿意度）
+const RATERS_INIT = [
+  {id:'IW026',pw:'123456',name:'鄭聯貞',unit:'人資發展中心',type:'mgr',perm:'主管加權評分之評分主管兼系統管理者，可查閱及轉出評分結果',firstLogin:true},
+  {id:'IW018',pw:'123456',name:'洪麗敏',unit:'財務中心',type:'mgr',perm:'主管加權評分之評分主管，只能評分、查閱所評分之受評者',firstLogin:true},
+  {id:'IW081',pw:'123456',name:'洪嘉敏',unit:'會計中心',type:'mgr',perm:'主管加權評分之評分主管，只能評分、查閱所評分之受評者',firstLogin:true},
+  {id:'IW096',pw:'123456',name:'廖姿蓁',unit:'資訊安全中心',type:'mgr',perm:'主管加權評分之評分主管，只能評分、查閱所評分之受評者',firstLogin:true},
+  {id:'IW066',pw:'123456',name:'蔡孝德',unit:'總經理',type:'mgr',perm:'主管加權評分之評分主管，只能評分、查閱所評分之受評者',firstLogin:true},
+  {id:'RT004',pw:'123456',name:'謝明達',unit:'協理',type:'sat',perm:'服務滿意度調查之評分主管，只能進行評分，無法查看評分結果',firstLogin:true},
+  {id:'RT010',pw:'123456',name:'吳文伯',unit:'專案協理',type:'sat',perm:'服務滿意度調查之評分主管，只能進行評分，無法查看評分結果',firstLogin:true},
+  {id:'RT012',pw:'123456',name:'吳振宇',unit:'專案協理',type:'sat',perm:'服務滿意度調查之評分主管，只能進行評分，無法查看評分結果',firstLogin:true},
+  {id:'RT016',pw:'123456',name:'焦治翔',unit:'經理',type:'sat',perm:'服務滿意度調查之評分主管，只能進行評分，無法查看評分結果',firstLogin:true},
+  {id:'RT013',pw:'123456',name:'吳靜琇',unit:'經理',type:'sat',perm:'服務滿意度調查之評分主管，只能進行評分，無法查看評分結果',firstLogin:true},
+  {id:'RT019',pw:'123456',name:'邱子傑',unit:'專案協理',type:'sat',perm:'服務滿意度調查之評分主管，只能進行評分，無法查看評分結果',firstLogin:true},
+  {id:'Test001',pw:'123456',name:'測試員1',unit:'',type:'mgr',perm:'主管加權評分之評分主管，只能評分、查閱所評分之受評者',firstLogin:true},
+  {id:'Test002',pw:'123456',name:'測試員2',unit:'',type:'mgr',perm:'主管加權評分之評分主管，只能評分、查閱所評分之受評者',firstLogin:true},
+  {id:'Test003',pw:'123456',name:'測試員3',unit:'',type:'sat',perm:'服務滿意度調查之評分主管，只能進行評分，無法查看評分結果',firstLogin:true},
+  {id:'Test004',pw:'123456',name:'測試員4',unit:'',type:'sat',perm:'服務滿意度調查之評分主管，只能進行評分，無法查看評分結果',firstLogin:true},
+  {id:'Test005',pw:'123456',name:'測試員5',unit:'',type:'sat',perm:'服務滿意度調查之評分主管，只能進行評分，無法查看評分結果',firstLogin:true},
+];
+
+// 受評者（完整 28 筆）
+const RATEES_INIT = [
+  {id:'IW017',name:'王百貴',dept:'秘書組',fullDept:'董事長.董事長室.秘書組',grade:8,title:'經理',joinDate:'1994-09-12',mgrRaterId:'',mgrRaterName:'',satRaterIds:[]},
+  {id:'IW088',name:'連珮君',dept:'秘書組',fullDept:'董事長.董事長室.秘書組',grade:5,title:'高級管理師',joinDate:'2020-10-05',mgrRaterId:'',mgrRaterName:'',satRaterIds:[]},
+  {id:'IW045',name:'蔡嫻如',dept:'稽核室',fullDept:'董事長.稽核室',grade:4,title:'管理師',joinDate:'2022-03-23',mgrRaterId:'',mgrRaterName:'',satRaterIds:[]},
+  {id:'IW093',name:'龔怡孚',dept:'稽核室',fullDept:'董事長.稽核室',grade:7,title:'專案副理',joinDate:'2008-09-22',mgrRaterId:'',mgrRaterName:'',satRaterIds:[]},
+  {id:'IW026',name:'鄭聯貞',dept:'人資發展中心',fullDept:'董事長.總經理.人資發展中心',grade:8,title:'經理',joinDate:'2020-06-08',mgrRaterId:'IW066',mgrRaterName:'蔡孝德',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW027',name:'賴郁文',dept:'人資課',fullDept:'董事長.總經理.人資發展中心.人資部.人資課',grade:5,title:'高級管理師',joinDate:'2020-09-21',mgrRaterId:'IW026',mgrRaterName:'鄭聯貞',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW029',name:'邱子綢',dept:'人資課',fullDept:'董事長.總經理.人資發展中心.人資部.人資課',grade:6,title:'課長',joinDate:'2020-11-18',mgrRaterId:'IW026',mgrRaterName:'鄭聯貞',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW059',name:'李瑀玲',dept:'人資課',fullDept:'董事長.總經理.人資發展中心.人資部.人資課',grade:4,title:'管理師',joinDate:'2023-09-11',mgrRaterId:'IW026',mgrRaterName:'鄭聯貞',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW063',name:'徐翊萍',dept:'行政課',fullDept:'董事長.總經理.人資發展中心.人資部.行政課',grade:4,title:'管理師',joinDate:'2024-01-08',mgrRaterId:'IW026',mgrRaterName:'鄭聯貞',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW087',name:'鄔采玲',dept:'行政課',fullDept:'董事長.總經理.人資發展中心.人資部.行政課',grade:5,title:'高級管理師',joinDate:'2006-04-26',mgrRaterId:'IW026',mgrRaterName:'鄭聯貞',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW054',name:'郭靜樺',dept:'法務部',fullDept:'董事長.總經理.人資發展中心.法務部',grade:4,title:'管理師',joinDate:'2023-03-21',mgrRaterId:'IW026',mgrRaterName:'鄭聯貞',satRaterIds:['RT004','RT016','RT013','RT019','RT010','RT012']},
+  {id:'IW072',name:'李芯羽',dept:'法務部',fullDept:'董事長.總經理.人資發展中心.法務部',grade:7,title:'專案副理',joinDate:'2024-08-21',mgrRaterId:'IW026',mgrRaterName:'鄭聯貞',satRaterIds:['RT004','RT016','RT013','RT019','RT010','RT012']},
+  {id:'IW097',name:'陳昱溱',dept:'法務部',fullDept:'董事長.總經理.人資發展中心.法務部',grade:5,title:'高級管理師',joinDate:'',mgrRaterId:'IW026',mgrRaterName:'鄭聯貞',satRaterIds:['RT004','RT016','RT013','RT019','RT010','RT012']},
+  {id:'IW021',name:'吳素誠',dept:'財務部',fullDept:'董事長.總經理.財務長室.財務中心.財務部',grade:7,title:'專案副理',joinDate:'2006-12-18',mgrRaterId:'IW026',mgrRaterName:'鄭聯貞',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW069',name:'陳品融',dept:'財務部',fullDept:'董事長.總經理.財務長室.財務中心.財務部',grade:7,title:'專案副理',joinDate:'2024-06-17',mgrRaterId:'IW018',mgrRaterName:'洪麗敏',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW094',name:'黃祈靖',dept:'財務部',fullDept:'董事長.總經理.財務長室.財務中心.財務部',grade:5,title:'高級管理師',joinDate:'2025-07-22',mgrRaterId:'IW018',mgrRaterName:'洪麗敏',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW038',name:'廖密雅',dept:'會計部',fullDept:'董事長.總經理.財務長室.會計中心.會計部',grade:5,title:'高級管理師',joinDate:'2017-06-05',mgrRaterId:'IW081',mgrRaterName:'洪嘉敏',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW084',name:'鄭婉柔',dept:'會計部',fullDept:'董事長.總經理.財務長室.會計中心.會計部',grade:5,title:'高級管理師',joinDate:'2025-02-04',mgrRaterId:'IW081',mgrRaterName:'洪嘉敏',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW053',name:'羅佳昕',dept:'策略投資部',fullDept:'董事長.總經理.策略發展中心.策略投資部',grade:7,title:'副理',joinDate:'2023-02-01',mgrRaterId:'',mgrRaterName:'',satRaterIds:[]},
+  {id:'IW004',name:'吳詩培',dept:'系統課',fullDept:'董事長.總經理.資訊安全中心.資訊部.系統課',grade:4,title:'工程師',joinDate:'2017-09-04',mgrRaterId:'IW096',mgrRaterName:'廖姿蓁',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW050',name:'郭家瑋',dept:'系統課',fullDept:'董事長.總經理.資訊安全中心.資訊部.系統課',grade:4,title:'工程師',joinDate:'2022-08-01',mgrRaterId:'IW096',mgrRaterName:'廖姿蓁',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW061',name:'陳煜涵',dept:'系統課',fullDept:'董事長.總經理.資訊安全中心.資訊部.系統課',grade:5,title:'高級工程師',joinDate:'2023-10-02',mgrRaterId:'IW096',mgrRaterName:'廖姿蓁',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW074',name:'陳思妤',dept:'系統課',fullDept:'董事長.總經理.資訊安全中心.資訊部.系統課',grade:4,title:'工程師',joinDate:'2024-09-02',mgrRaterId:'IW096',mgrRaterName:'廖姿蓁',satRaterIds:['RT004','RT016','RT013','RT019']},
+  {id:'IW022',name:'陳婉菁',dept:'營運管理部',fullDept:'董事長.總經理.營運管理部',grade:5,title:'副課長',joinDate:'2007-11-01',mgrRaterId:'',mgrRaterName:'',satRaterIds:[]},
+  {id:'IW075',name:'曹莛蓁',dept:'營運管理部',fullDept:'董事長.總經理.營運管理部',grade:4,title:'管理師',joinDate:'2024-10-14',mgrRaterId:'',mgrRaterName:'',satRaterIds:[]},
+  {id:'IW078',name:'莊元朝',dept:'營運管理部',fullDept:'董事長.總經理.營運管理部',grade:4,title:'工程師',joinDate:'2024-12-02',mgrRaterId:'',mgrRaterName:'',satRaterIds:[]},
+  {id:'IW089',name:'張芝庭',dept:'營運管理部',fullDept:'董事長.總經理.營運管理部',grade:4,title:'管理師',joinDate:'2025-02-10',mgrRaterId:'',mgrRaterName:'',satRaterIds:[]},
+  {id:'IW092',name:'吳謙昕',dept:'總經理室',fullDept:'董事長.總經理.總經理室',grade:5,title:'高級管理師',joinDate:'2020-04-15',mgrRaterId:'IW066',mgrRaterName:'蔡孝德',satRaterIds:['RT004','RT016','RT013','RT019']},
+];
+
+// ══════════════════════════════════════════
+// ② 狀態管理（localStorage）
+// ══════════════════════════════════════════
+function loadState(key, def){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):def; }catch(e){ return def; } }
+function saveState(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+let users = loadState('sys_users', null);
+if(!users){
+  users = {};
+  [...ADMIN_USERS_INIT, ...RATERS_INIT].forEach(u=>{ if(!users[u.id]) users[u.id]=JSON.parse(JSON.stringify(u)); });
+  saveState('sys_users', users);
+}
+
+let flowConfig = loadState('sys_flow', {
+  quarter:'2026Q3', supportDeadline:'2026-07-10', satDeadline:'2026-09-30', mgrDeadline:'2026-10-07',
+  stage:0, // 0=未開始 1=支援比重設定中 2=服務滿意度評分中 3=主管加權評分中 4=完成
+  supportLocked:false, satLocked:false, mgrLocked:false
+});
+
+let supportData = loadState('sys_support', {}); // {rateeId: {raterId, ratio, locked, updatedAt}}
+let satData = loadState('sys_sat', {});          // {rateeId: {raterId: {speed,prof,comm,submittedAt}}}
+let mgrData = loadState('sys_mgr', {});          // {rateeId: {complex,initiative,collab,expertise,submittedBy,submittedAt,note}}
+let ratees = loadState('sys_ratees', RATEES_INIT);
+
+let currentUser = null;
+
+// ══════════════════════════════════════════
+// ③ 工具函式
+// ══════════════════════════════════════════
+function fmt(n){ return isNaN(n)||n===null?'—':Math.round(n).toLocaleString(); }
+function pct(n){ return (n*100).toFixed(1)+'%'; }
+function today(){ return new Date().toISOString().slice(0,10); }
+function quarterDays(q){
+  const m={'Q1':90,'Q2':91,'Q3':92,'Q4':92};
+  return m[q.slice(-2)]||92;
+}
+function workDaysRatio(joinDate, quarter){
+  if(!joinDate) return 1;
+  const qMap={'2026Q1':{s:'2026-01-01',e:'2026-03-31'},'2026Q2':{s:'2026-04-01',e:'2026-06-30'},'2026Q3':{s:'2026-07-01',e:'2026-09-30'},'2026Q4':{s:'2026-10-01',e:'2026-12-31'}};
+  const q=qMap[quarter]||qMap['2026Q3'];
+  const jd=new Date(joinDate), qs=new Date(q.s), qe=new Date(q.e);
+  if(jd<=qs) return 1;
+  if(jd>qe) return 0;
+  const total=(qe-qs)/86400000+1;
+  const worked=(qe-jd)/86400000+1;
+  return Math.min(worked/total,1);
+}
+function calcBonus(ratee){
+  const sup=supportData[ratee.id];
+  if(!sup||!sup.ratio) return null;
+  const ratio=sup.ratio/100;
+  const price=getJobPrice(ratee.dept,ratee.grade);
+  const dayR=workDaysRatio(ratee.joinDate, flowConfig.quarter);
+  // 服務滿意度
+  const satList=Object.values(satData[ratee.id]||{});
+  let satAvg=3;
+  if(satList.length>0) satAvg=satList.reduce((s,r)=>(s+(r.speed+r.prof+r.comm)/3),0)/satList.length;
+  const satRate=(satAvg/5)*40;
+  // 主管評分
+  const mgr=mgrData[ratee.id];
+  let mgrRaw=3;
+  if(mgr) mgrRaw=mgr.complex*0.3+mgr.initiative*0.3+mgr.collab*0.2+mgr.expertise*0.2;
+  const mgrRate=(mgrRaw/5)*60;
+  const perfRate=(satRate+mgrRate)/100;
+  const fixed=price*ratio*0.10;
+  const variable=price*ratio*0.90*perfRate;
+  const total=(fixed+variable)*dayR;
+  return {price,ratio,dayR,satAvg,satRate,mgrRaw,mgrRate,perfRate,fixed,variable,total,satList,mgr};
+}
+function getRaterName(id){ const u=users[id]; return u?u.name:id; }
+function getSatRaterName(id){ const u=users[id]; return u?u.name:id; }
+
+// ══════════════════════════════════════════
+// ④ 登入 / 登出
+// ══════════════════════════════════════════
+function doLogin(){
+  const id=document.getElementById('loginId').value.trim();
+  const pw=document.getElementById('loginPw').value;
+  const err=document.getElementById('loginErr');
+  const u=users[id];
+  if(!u){ err.textContent='帳號不存在'; return; }
+  if(String(u.pw)!==String(pw)){ err.textContent='密碼錯誤'; return; }
+  currentUser=u;
+  document.getElementById('loginOverlay').classList.add('hidden');
+  if(u.firstLogin){ showForcePwChange(); return; }
+  afterLogin();
+}
+function showForcePwChange(){
+  document.getElementById('pwModal').classList.remove('hidden');
+}
+function doChangePw(){
+  const p1=document.getElementById('newPw1').value;
+  const p2=document.getElementById('newPw2').value;
+  const err=document.getElementById('pwErr');
+  if(p1.length<6){ err.textContent='密碼至少需 6 碼'; return; }
+  if(p1!==p2){ err.textContent='兩次密碼不一致'; return; }
+  users[currentUser.id].pw=p1;
+  users[currentUser.id].firstLogin=false;
+  currentUser.pw=p1; currentUser.firstLogin=false;
+  saveState('sys_users',users);
+  document.getElementById('pwModal').classList.add('hidden');
+  afterLogin();
+}
+function openChangePw(){
+  closeUserMenu();
+  document.getElementById('newPw1').value='';
+  document.getElementById('newPw2').value='';
+  document.getElementById('pwErr').textContent='';
+  document.getElementById('pwModal').classList.remove('hidden');
+}
+function afterLogin(){
+  const u=currentUser;
+  document.getElementById('userChipName').textContent=`${u.name}（${u.role==='superadmin'?'最高管理者':u.role==='admin'?'管理者':u.type==='mgr'?'主管評分':u.type==='sat'?'滿意度評分':''}）`;
+  document.getElementById('userMenuInfo').textContent=`${u.id} ｜ ${u.unit||''}`;
+  buildNav();
+  renderAll();
+}
+function doLogout(){
+  closeUserMenu();
+  currentUser=null;
+  location.reload();
+}
+function showUserMenu(){ const m=document.getElementById('userMenu'); m.style.display=m.style.display==='none'?'block':'none'; }
+function closeUserMenu(){ document.getElementById('userMenu').style.display='none'; }
+document.addEventListener('click',e=>{ if(!e.target.closest('#userChip')&&!e.target.closest('#userMenu')) closeUserMenu(); });
+
+// ══════════════════════════════════════════
+// ⑤ 導覽
+// ══════════════════════════════════════════
+function buildNav(){
+  const u=currentUser;
+  const isAdmin=u.role==='admin'||u.role==='superadmin';
+  const isMgr=isAdmin||(u.type==='mgr');
+  const isSat=u.type==='sat';
+  document.getElementById('navAdmin').style.display=isAdmin?'block':'none';
+  document.getElementById('navMgr').style.display=isMgr&&!isAdmin?'block':'none';
+  document.getElementById('navSat').style.display=isSat?'block':'none';
+  if(isAdmin) showPage('dashboard');
+  else if(isMgr) showPage('mgr-support');
+  else if(isSat) showPage('sat-score');
+}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);
+  if(pg) pg.classList.add('active');
+  const nav=document.getElementById('nav-'+id);
+  if(nav) nav.classList.add('active');
+  renderPage(id);
+}
+function switchTab(id,btn){
+  const parent=btn.closest('.card,.tab-content')?.parentElement||btn.parentElement.parentElement;
+  parent.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  parent.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// ⑥ 渲染總控
+// ══════════════════════════════════════════
+function renderAll(){
+  renderFlowStatus();
+  renderPage('dashboard');
+}
+function renderPage(id){
+  if(id==='dashboard') renderDashboard();
+  else if(id==='admin-users') renderAdminUsers();
+  else if(id==='admin-flow') renderAdminFlow();
+  else if(id==='admin-results') renderResults();
+  else if(id==='mgr-support') renderMgrSupport();
+  else if(id==='mgr-score') renderMgrScore();
+  else if(id==='mgr-view') renderMgrView();
+  else if(id==='sat-score') renderSatScore();
+}
+
+// ══════════════════════════════════════════
+// ⑦ 流程狀態
+// ══════════════════════════════════════════
+const STAGES=[
+  {name:'支援比重設定',key:'support'},
+  {name:'服務滿意度評分',key:'sat'},
+  {name:'主管加權評分',key:'mgr'},
+  {name:'結果匯整發布',key:'done'},
+];
+function renderFlowStatus(){
+  const chip=document.getElementById('flowStatusChip');
+  chip.style.display='block';
+  chip.textContent=`${flowConfig.quarter} ｜ 階段 ${flowConfig.stage}/4`;
+}
+function renderFlowStepsBar(){
+  const bar=document.getElementById('flowStepsBar');
+  bar.innerHTML=STAGES.map((s,i)=>{
+    const stageNum=i+1;
+    let cls='flow-step';
+    let status='';
+    if(flowConfig.stage>stageNum){ cls+=' done'; status='✅ 已完成'; }
+    else if(flowConfig.stage===stageNum){ cls+=' active-step'; status='🔄 進行中'; }
+    else{ cls+=' locked'; status='🔒 待開放'; }
+    return `<div class="${cls}"><div class="step-num">步驟 ${stageNum}</div><div class="step-name">${s.name}</div><div class="step-status">${status}</div></div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// ⑧ 儀表板
+// ══════════════════════════════════════════
+function renderDashboard(){
+  renderFlowStepsBar();
+  // 流程操作區
+  const area=document.getElementById('flowActionArea');
+  const u=currentUser;
+  const isSuper=u.role==='superadmin';
+  let html='<div class="btn-group" style="margin-top:10px;">';
+  if(flowConfig.stage===0&&isSuper) html+=`<button class="btn btn-primary" onclick="advanceStage()">▶ 開啟支援比重設定階段</button>`;
+  if(flowConfig.stage===1&&isSuper){
+    const done=ratees.filter(r=>r.mgrRaterId&&supportData[r.id]?.locked).length;
+    const total=ratees.filter(r=>r.mgrRaterId).length;
+    html+=`<span style="font-size:.85rem;color:var(--text-light);margin-right:10px;">支援比重已設定：${done}/${total} 人</span>`;
+    html+=`<button class="btn btn-primary" onclick="advanceStage()">▶ 關閉設定，開啟服務滿意度評分</button>`;
+    html+=`<button class="btn btn-outline btn-sm" onclick="reopenStage(1)">🔓 重新開放支援比重設定</button>`;
+  }
+  if(flowConfig.stage===2&&isSuper){
+    const done=ratees.filter(r=>r.satRaterIds.length>0&&checkSatComplete(r.id)).length;
+    const total=ratees.filter(r=>r.satRaterIds.length>0).length;
+    html+=`<span style="font-size:.85rem;color:var(--text-light);margin-right:10px;">服務滿意度已完成：${done}/${total} 人</span>`;
+    html+=`<button class="btn btn-primary" onclick="advanceStage()">▶ 關閉評分，開啟主管加權評分</button>`;
+  }
+  if(flowConfig.stage===3&&isSuper){
+    const done=ratees.filter(r=>r.mgrRaterId&&mgrData[r.id]).length;
+    const total=ratees.filter(r=>r.mgrRaterId).length;
+    html+=`<span style="font-size:.85rem;color:var(--text-light);margin-right:10px;">主管評分已完成：${done}/${total} 人</span>`;
+    html+=`<button class="btn btn-success" onclick="advanceStage()">✅ 完成評核，發布結果</button>`;
+  }
+  if(flowConfig.stage===4) html+=`<span class="tag tag-done" style="font-size:.85rem;padding:6px 14px;">✅ 本季評核已完成</span>`;
+  html+='</div>';
+  area.innerHTML=html;
+
+  // 統計卡
+  const total=ratees.length;
+  const withMgr=ratees.filter(r=>r.mgrRaterId).length;
+  const supDone=ratees.filter(r=>supportData[r.id]?.locked).length;
+  const satDone=ratees.filter(r=>checkSatComplete(r.id)).length;
+  const mgrDone=ratees.filter(r=>mgrData[r.id]).length;
+  const grid=document.getElementById('statsGrid');
+  grid.innerHTML=[
+    {icon:'👤',color:'#e8f0fb',val:total,label:'受評者總數',iconBg:'#1a4f8a'},
+    {icon:'📝',color:'#eafaf1',val:supDone,label:'支援比重已設定',iconBg:'#27ae60'},
+    {icon:'⭐',color:'#fef9e7',val:satDone,label:'服務滿意度已完成',iconBg:'#f39c12'},
+    {icon:'✅',color:'#f5eef8',val:mgrDone,label:'主管評分已完成',iconBg:'#8e44ad'},
+  ].map(s=>`
+    <div class="stat-card">
+      <div class="stat-icon" style="background:${s.color};color:${s.iconBg};">${s.icon}</div>
+      <div><div class="stat-val" style="color:${s.iconBg};">${s.val}</div><div class="stat-label">${s.label}</div></div>
+    </div>
+  `).join('');
+
+  // 進度表
+  const tbody=document.getElementById('progressBody');
+  tbody.innerHTML=ratees.map(r=>{
+    const sup=supportData[r.id];
+    const satList=Object.values(satData[r.id]||{});
+    const mgr=mgrData[r.id];
+    const b=calcBonus(r);
+    const supTag=sup?.locked?`<span class="tag tag-done">${sup.ratio}%</span>`:`<span class="tag tag-pending">未設定</span>`;
+    const satExpected=r.satRaterIds.length;
+    const satTag=satExpected===0?'<span class="tag" style="background:#f0f4f8;color:#999;">不適用</span>':
+      satList.length>=satExpected?`<span class="tag tag-done">${satList.length}/${satExpected}</span>`:
+      `<span class="tag tag-pending">${satList.length}/${satExpected}</span>`;
+    const mgrTag=r.mgrRaterId?(mgr?`<span class="tag tag-done">已完成</span>`:`<span class="tag tag-pending">待評分</span>`):'<span class="tag" style="background:#f0f4f8;color:#999;">不適用</span>';
+    const perfTag=b?`<span style="font-weight:700;color:${b.perfRate>=0.5?'var(--success)':'var(--danger)'};">${pct(b.perfRate)}</span>`:'—';
+    const bonusTag=b?`<b style="color:var(--primary);">${fmt(b.total)}</b>`:'—';
+    let statusTag='<span class="tag tag-pending">評核中</span>';
+    if(flowConfig.stage===4&&b) statusTag=b.perfRate>=0.5?'<span class="tag tag-done">正常發放</span>':'<span class="tag tag-locked">浮動取消</span>';
+    const gradeTag=r.grade<=5?`<span class="tag tag-g5">G${r.grade}</span>`:r.grade<=7?`<span class="tag tag-g67">G${r.grade}</span>`:`<span class="tag tag-g8">G${r.grade}</span>`;
+    return `<tr>
+      <td><code>${r.id}</code></td><td><b>${r.name}</b></td><td style="font-size:.8rem;">${r.dept}</td>
+      <td class="td-center">${gradeTag}</td>
+      <td class="td-center">${supTag}</td>
+      <td class="td-center">${satTag}</td>
+      <td class="td-center">${mgrTag}</td>
+      <td class="td-center">${perfTag}</td>
+      <td class="td-num">${bonusTag}</td>
+      <td class="td-center">${statusTag}</td>
+    </tr>`;
+  }).join('');
+}
+
+function checkSatComplete(rateeId){
+  const r=ratees.find(x=>x.id===rateeId);
+  if(!r||r.satRaterIds.length===0) return false;
+  const submitted=Object.keys(satData[rateeId]||{});
+  const rate=submitted.length/r.satRaterIds.length;
+  return rate>=0.6;
+}
+
+function advanceStage(){
+  if(flowConfig.stage>=4) return;
+  flowConfig.stage++;
+  saveState('sys_flow',flowConfig);
+  renderAll();
+}
+function reopenStage(s){
+  showConfirm('重新開放支援比重設定','確定要重新開放支援比重設定？主管將可再次修改。',()=>{
+    // 解鎖所有支援比重
+    Object.keys(supportData).forEach(k=>{ if(supportData[k]) supportData[k].locked=false; });
+    saveState('sys_support',supportData);
+    renderAll();
+  });
+}
+
+// ══════════════════════════════════════════
+// ⑨ 人員管理
+// ══════════════════════════════════════════
+function renderAdminUsers(){
+  // 管理者
+  const adminList=Object.values(users).filter(u=>u.role==='admin'||u.role==='superadmin');
+  document.getElementById('adminUserBody').innerHTML=adminList.map(u=>`
+    <tr>
+      <td><code>${u.id}</code></td><td><b>${u.name}</b></td><td>${u.unit||'—'}</td>
+      <td style="font-size:.8rem;">${u.perm||'—'}</td>
+      <td class="td-center"><span class="tag ${u.role==='superadmin'?'tag-admin':'tag-mgr'}">${u.role==='superadmin'?'最高管理者':'管理者'}</span></td>
+    </tr>`).join('');
+  // 評分者
+  const raterList=Object.values(users).filter(u=>u.type==='mgr'||u.type==='sat');
+  document.getElementById('raterBody').innerHTML=raterList.map(u=>`
+    <tr>
+      <td><code>${u.id}</code></td><td><b>${u.name}</b></td><td>${u.unit||'—'}</td>
+      <td><span class="tag ${u.type==='mgr'?'tag-mgr':'tag-sat'}">${u.type==='mgr'?'主管加權評分':'服務滿意度'}</span></td>
+      <td style="font-size:.8rem;">${u.perm||'—'}</td>
+      <td class="td-center">
+        <button class="btn btn-outline btn-sm" onclick="resetPw('${u.id}')">🔑 重設密碼</button>
+      </td>
+    </tr>`).join('');
+  // 受評者
+  document.getElementById('rateeBody').innerHTML=ratees.map(r=>`
+    <tr>
+      <td><code>${r.id}</code></td><td><b>${r.name}</b></td>
+      <td style="font-size:.8rem;">${r.dept}</td>
+      <td class="td-center"><span class="tag ${r.grade<=5?'tag-g5':r.grade<=7?'tag-g67':'tag-g8'}">G${r.grade}</span></td>
+      <td>${r.title}</td>
+      <td style="font-size:.8rem;">${r.joinDate||'—'}</td>
+      <td style="font-size:.8rem;">${r.mgrRaterName||'<span style="color:#999;">不適用</span>'}</td>
+      <td style="font-size:.8rem;">${r.satRaterIds.length>0?r.satRaterIds.map(id=>getSatRaterName(id)).join('、'):'<span style="color:#999;">不適用</span>'}</td>
+    </tr>`).join('');
+}
+function resetPw(id){
+  showConfirm('重設密碼',`確定要將「${users[id]?.name}」的密碼重設為預設密碼 123456？`,()=>{
+    users[id].pw='123456'; users[id].firstLogin=true;
+    saveState('sys_users',users);
+    alert(`✅ 已重設 ${users[id].name} 的密碼`);
+  });
+}
+
+// ══════════════════════════════════════════
+// ⑩ 流程控制
+// ══════════════════════════════════════════
+function renderAdminFlow(){
+  document.getElementById('adminQuarter').value=flowConfig.quarter;
+  document.getElementById('supportDeadline').value=flowConfig.supportDeadline||'';
+  document.getElementById('satDeadline').value=flowConfig.satDeadline||'';
+  document.getElementById('mgrDeadline').value=flowConfig.mgrDeadline||'';
+  const btns=document.getElementById('flowControlBtns');
+  const isSuper=currentUser.role==='superadmin';
+  btns.innerHTML=`
+    <div style="margin-bottom:10px;">
+      <div style="font-size:.85rem;color:var(--text-light);margin-bottom:6px;">目前階段：<b style="color:var(--primary);">步驟 ${flowConfig.stage}/4 — ${flowConfig.stage===0?'未開始':STAGES[flowConfig.stage-1]?.name||'完成'}</b></div>
+    </div>
+    ${isSuper?`
+    <div class="btn-group">
+      ${flowConfig.stage===0?`<button class="btn btn-primary" onclick="advanceStage();renderAdminFlow();">▶ 開啟步驟1：支援比重設定</button>`:''}
+      ${flowConfig.stage===1?`<button class="btn btn-primary" onclick="advanceStage();renderAdminFlow();">▶ 推進至步驟2：服務滿意度評分</button><button class="btn btn-outline btn-sm" onclick="reopenStage(1);renderAdminFlow();">🔓 重新開放支援比重</button>`:''}
+      ${flowConfig.stage===2?`<button class="btn btn-primary" onclick="advanceStage();renderAdminFlow();">▶ 推進至步驟3：主管加權評分</button>`:''}
+      ${flowConfig.stage===3?`<button class="btn btn-success" onclick="advanceStage();renderAdminFlow();">✅ 完成評核，發布結果</button>`:''}
+      ${flowConfig.stage===4?`<span class="tag tag-done" style="padding:8px 16px;font-size:.85rem;">✅ 本季評核已完成</span>`:''}
+    </div>`:'<div class="alert alert-warn">⚠️ 只有最高權限管理者（賴郁文）可操作流程推進</div>'}
+  `;
+}
+function saveFlowConfig(){
+  flowConfig.quarter=document.getElementById('adminQuarter').value;
+  flowConfig.supportDeadline=document.getElementById('supportDeadline').value;
+  flowConfig.satDeadline=document.getElementById('satDeadline').value;
+  flowConfig.mgrDeadline=document.getElementById('mgrDeadline').value;
+  saveState('sys_flow',flowConfig);
+  renderFlowStatus();
+  alert('✅ 設定已儲存');
+}
+
+// ══════════════════════════════════════════
+// ⑪ 評核結果
+// ══════════════════════════════════════════
+function renderResults(){
+  const tbody=document.getElementById('resultsBody');
+  tbody.innerHTML=ratees.map(r=>{
+    const b=calcBonus(r);
+    if(!b) return `<tr><td><code>${r.id}</code></td><td>${r.name}</td><td>${r.dept}</td><td colspan="11" style="color:#999;text-align:center;">尚未設定支援比重</td></tr>`;
+    const price=b.price;
+    const payStatus=b.perfRate>=0.5?'<span class="tag tag-done">正常發放</span>':
+      '<span class="tag tag-locked">浮動取消</span>';
+    return `<tr>
+      <td><code>${r.id}</code></td><td><b>${r.name}</b></td><td style="font-size:.8rem;">${r.dept}</td>
+      <td class="td-center"><span class="tag ${r.grade<=5?'tag-g5':r.grade<=7?'tag-g67':'tag-g8'}">G${r.grade}</span></td>
+      <td class="td-num">${price.toLocaleString()}</td>
+      <td class="td-center">${(b.ratio*100).toFixed(0)}%</td>
+      <td class="td-center">${(b.dayR*100).toFixed(0)}%</td>
+      <td class="td-center">${b.satAvg.toFixed(2)}</td>
+      <td class="td-center">${b.mgrRaw.toFixed(2)}</td>
+      <td class="td-center" style="font-weight:700;color:${b.perfRate>=0.5?'var(--success)':'var(--danger)'};">${pct(b.perfRate)}</td>
+      <td class="td-num">${fmt(b.fixed)}</td>
+      <td class="td-num">${fmt(b.variable)}</td>
+      <td class="td-num" style="color:var(--accent);font-size:1rem;"><b>${fmt(b.total)}</b></td>
+      <td class="td-center">${payStatus}</td>
+    </tr>`;
+  }).join('');
+}
+function exportResultCSV(){
+  const rows=[['工號','姓名','部門','職等','職務定價','支援比重','在職天數比','服務滿意度','主管評分','綜合得分率','固定獎金','浮動獎金','本季獎金','發放狀態']];
+  ratees.forEach(r=>{
+    const b=calcBonus(r);
+    if(!b){ rows.push([r.id,r.name,r.dept,`G${r.grade}`,'','','','','','','','','','尚未設定']); return; }
+    rows.push([r.id,r.name,r.dept,`G${r.grade}`,b.price,(b.ratio*100).toFixed(0)+'%',(b.dayR*100).toFixed(0)+'%',b.satAvg.toFixed(2),b.mgrRaw.toFixed(2),pct(b.perfRate),Math.round(b.fixed),Math.round(b.variable),Math.round(b.total),b.perfRate>=0.5?'正常發放':'浮動取消']);
+  });
+  const csv='\uFEFF'+rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`後勤支援獎金_${flowConfig.quarter}_結果.csv`;
+  a.click();
+}
+
+// ══════════════════════════════════════════
+// ⑫ 主管：支援比重設定
+// ══════════════════════════════════════════
+function renderMgrSupport(){
+  const u=currentUser;
+  const alert=document.getElementById('mgrSupportAlert');
+  const content=document.getElementById('mgrSupportContent');
+  if(flowConfig.stage<1){
+    alert.innerHTML='<div class="alert alert-warn">⚠️ 支援比重設定尚未開放，請等待管理者開啟本階段</div>';
+    content.innerHTML=''; return;
+  }
+  if(flowConfig.stage>1){
+    alert.innerHTML='<div class="alert alert-info">ℹ️ 支援比重設定階段已結束，以下為已鎖定之設定結果</div>';
+  } else {
+    alert.innerHTML=`<div class="alert alert-warn">⚠️ 設定後送出即鎖定，當季不得修改。截止日：${flowConfig.supportDeadline||'—'}</div>`;
+  }
+  // 取得此主管負責的受評者
+  const myRatees=ratees.filter(r=>r.mgrRaterId===u.id);
+  if(myRatees.length===0){ content.innerHTML='<div class="alert alert-info">ℹ️ 您目前沒有需要設定支援比重的受評者</div>'; return; }
+
+  content.innerHTML=myRatees.map(r=>{
+    const sup=supportData[r.id];
+    const locked=sup?.locked||flowConfig.stage>1;
+    const currentRatio=sup?.ratio||0;
+    return `
+    <div class="card" id="supCard_${r.id}">
+      <div class="card-title">👤 ${r.name} <span style="font-size:.8rem;color:var(--text-light);">${r.id} ｜ ${r.dept} ｜ G${r.grade}</span>
+        ${locked?'<span class="tag tag-done" style="margin-left:8px;">已鎖定</span>':''}
+      </div>
+      <div class="alert alert-info" style="margin-bottom:12px;">
+        ℹ️ 職務定價：<b>${getJobPrice(r.dept,r.grade).toLocaleString()} 元</b> ｜ 到職日：${r.joinDate||'—'} ｜ 在職天數比：<b>${(workDaysRatio(r.joinDate,flowConfig.quarter)*100).toFixed(0)}%</b>
+      </div>
+      <div id="supRows_${r.id}">
+        ${renderSupportRows(r.id, locked)}
+      </div>
+      ${!locked?`
+      <div class="btn-group">
+        <button class="btn btn-outline btn-sm" onclick="addSupportRow('${r.id}')">＋ 新增支援子公司</button>
+        <button class="btn btn-success" onclick="lockSupport('${r.id}')">🔒 確認送出並鎖定</button>
+      </div>`:''}
+      <div style="margin-top:10px;font-size:.85rem;">合計支援比重：<b id="supTotal_${r.id}" style="color:var(--primary);">${currentRatio}%</b></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSupportRows(rateeId, locked){
+  const sup=supportData[rateeId];
+  const rows=sup?.rows||[{company:'',ratio:0}];
+  return rows.map((row,i)=>`
+    <div style="display:grid;grid-template-columns:1fr 180px ${locked?'':'36px'};gap:8px;align-items:end;margin-bottom:8px;">
+      <div class="form-group" style="margin:0;"><label>支援子公司名稱</label>
+        <input type="text" value="${row.company}" ${locked?'readonly style="background:#e8f0fb;"':''} onchange="updateSupportRow('${rateeId}',${i},'company',this.value)">
+      </div>
+      <div class="form-group" style="margin:0;"><label>支援比重</label>
+        <select ${locked?'disabled':''} onchange="updateSupportRow('${rateeId}',${i},'ratio',parseInt(this.value))">
+          <option value="0">── 選擇 ──</option>
+          ${[10,20,30,40,50].map(v=>`<option value="${v}" ${row.ratio===v?'selected':''}>${v}%（${['偶發性','定期輕度','中度固定','重度持續','接近專責'][v/10-1]}）</option>`).join('')}
+        </select>
+      </div>
+      ${!locked?`<button onclick="removeSupportRow('${rateeId}',${i})" style="height:36px;margin-top:20px;background:var(--danger);color:#fff;border:none;border-radius:8px;cursor:pointer;">✕</button>`:''}
+    </div>`).join('');
+}
+
+function updateSupportRow(rateeId,idx,field,val){
+  if(!supportData[rateeId]) supportData[rateeId]={rows:[{company:'',ratio:0}],locked:false};
+  if(!supportData[rateeId].rows) supportData[rateeId].rows=[{company:'',ratio:0}];
+  supportData[rateeId].rows[idx][field]=val;
+  const total=supportData[rateeId].rows.reduce((s,r)=>s+(r.ratio||0),0);
+  supportData[rateeId].ratio=total;
+  const el=document.getElementById('supTotal_'+rateeId);
+  if(el) el.textContent=total+'%';
+  if(el) el.style.color=total>50?'var(--danger)':'var(--primary)';
+  saveState('sys_support',supportData);
+}
+function addSupportRow(rateeId){
+  if(!supportData[rateeId]) supportData[rateeId]={rows:[],ratio:0,locked:false};
+  if(!supportData[rateeId].rows) supportData[rateeId].rows=[];
+  supportData[rateeId].rows.push({company:'',ratio:0});
+  saveState('sys_support',supportData);
+  document.getElementById('supRows_'+rateeId).innerHTML=renderSupportRows(rateeId,false);
+}
+function removeSupportRow(rateeId,idx){
+  if(!supportData[rateeId]?.rows) return;
+  supportData[rateeId].rows.splice(idx,1);
+  const total=supportData[rateeId].rows.reduce((s,r)=>s+(r.ratio||0),0);
+  supportData[rateeId].ratio=total;
+  saveState('sys_support',supportData);
+  document.getElementById('supRows_'+rateeId).innerHTML=renderSupportRows(rateeId,false);
+  const el=document.getElementById('supTotal_'+rateeId);
+  if(el){ el.textContent=total+'%'; el.style.color=total>50?'var(--danger)':'var(--primary)'; }
+}
+function lockSupport(rateeId){
+  const sup=supportData[rateeId];
+  if(!sup||!sup.rows||sup.rows.length===0){ alert('請先設定支援比重'); return; }
+  const total=sup.rows.reduce((s,r)=>s+(r.ratio||0),0);
+  if(total===0){ alert('支援比重合計不得為 0'); return; }
+  if(total>50){ alert('支援比重合計不得超過 50%'); return; }
+  if(!sup.rows.every(r=>r.company&&r.ratio>0)){ alert('請確認所有子公司名稱與比重均已填寫'); return; }
+  showConfirm('確認送出並鎖定',`確定要鎖定「${ratees.find(r=>r.id===rateeId)?.name}」的支援比重（合計 ${total}%）？送出後當季不得修改。`,()=>{
+    supportData[rateeId].locked=true;
+    supportData[rateeId].lockedAt=new Date().toLocaleString('zh-TW');
+    saveState('sys_support',supportData);
+    renderMgrSupport();
+  });
+}
+
+// ══════════════════════════════════════════
+// ⑬ 服務滿意度評分
+// ══════════════════════════════════════════
+function renderSatScore(){
+  const u=currentUser;
+  const alert=document.getElementById('satScoreAlert');
+  const content=document.getElementById('satScoreContent');
+  if(flowConfig.stage<2){
+    alert.innerHTML='<div class="alert alert-warn">⚠️ 服務滿意度評分尚未開放，請等待管理者開啟本階段</div>';
+    content.innerHTML=''; return;
+  }
+  if(flowConfig.stage>2){
+    alert.innerHTML='<div class="alert alert-info">ℹ️ 服務滿意度評分階段已結束</div>';
+    content.innerHTML=''; return;
+  }
+  alert.innerHTML=`<div class="alert alert-info">ℹ️ 截止日：${flowConfig.satDeadline||'—'} ｜ 評分送出後不得修改 ｜ 回收率需達 60%</div>`;
+  // 此評分者可評分的受評者
+  const myRatees=ratees.filter(r=>r.satRaterIds.includes(u.id));
+  if(myRatees.length===0){ content.innerHTML='<div class="alert alert-info">ℹ️ 您目前沒有需要評分的受評者</div>'; return; }
+  content.innerHTML=myRatees.map(r=>{
+    const submitted=(satData[r.id]||{})[u.id];
+    if(submitted){
+      return `<div class="card">
+        <div class="card-title">👤 ${r.name} <span style="font-size:.8rem;color:var(--text-light);">${r.id} ｜ ${r.dept}</span>
+          <span class="tag tag-done" style="margin-left:8px;">已提交</span>
+        </div>
+        <div class="alert alert-success">✅ 您已於 ${submitted.submittedAt} 提交評分。反應速度：${submitted.speed} ｜ 專業度：${submitted.prof} ｜ 溝通品質：${submitted.comm} ｜ 平均：${((submitted.speed+submitted.prof+submitted.comm)/3).toFixed(2)}</div>
+      </div>`;
+    }
+    return `<div class="card">
+      <div class="card-title">👤 ${r.name} <span style="font-size:.8rem;color:var(--text-light);">${r.id} ｜ ${r.dept} ｜ G${r.grade}</span></div>
+      <div class="grid-3">
+        <div class="form-group"><label>反應速度（1–5分）</label>
+          <div class="slider-wrap"><input type="range" min="1" max="5" step="1" value="3" id="sat_speed_${r.id}" oninput="document.getElementById('satv_speed_${r.id}').textContent=this.value"><span class="slider-val" id="satv_speed_${r.id}">3</span></div>
+        </div>
+        <div class="form-group"><label>專業度（1–5分）</label>
+          <div class="slider-wrap"><input type="range" min="1" max="5" step="1" value="3" id="sat_prof_${r.id}" oninput="document.getElementById('satv_prof_${r.id}').textContent=this.value"><span class="slider-val" id="satv_prof_${r.id}">3</span></div>
+        </div>
+        <div class="form-group"><label>溝通品質（1–5分）</label>
+          <div class="slider-wrap"><input type="range" min="1" max="5" step="1" value="3" id="sat_comm_${r.id}" oninput="document.getElementById('satv_comm_${r.id}').textContent=this.value"><span class="slider-val" id="satv_comm_${r.id}">3</span></div>
+        </div>
+      </div>
+      <div class="btn-group"><button class="btn btn-success" onclick="submitSat('${r.id}')">✅ 提交評分</button></div>
+    </div>`;
+  }).join('');
+}
+function submitSat(rateeId){
+  const u=currentUser;
+  const speed=parseInt(document.getElementById(`sat_speed_${rateeId}`).value);
+  const prof=parseInt(document.getElementById(`sat_prof_${rateeId}`).value);
+  const comm=parseInt(document.getElementById(`sat_comm_${rateeId}`).value);
+  showConfirm('確認提交評分',`確定要提交對「${ratees.find(r=>r.id===rateeId)?.name}」的服務滿意度評分？送出後不得修改。`,()=>{
+    if(!satData[rateeId]) satData[rateeId]={};
+    satData[rateeId][u.id]={speed,prof,comm,submittedAt:new Date().toLocaleString('zh-TW'),raterName:u.name};
+    saveState('sys_sat',satData);
+    renderSatScore();
+  });
+}
+
+// ══════════════════════════════════════════
+// ⑭ 主管加權評分
+// ══════════════════════════════════════════
+function renderMgrScore(){
+  const u=currentUser;
+  const alert=document.getElementById('mgrScoreAlert');
+  const content=document.getElementById('mgrScoreContent');
+  if(flowConfig.stage<3){
+    alert.innerHTML='<div class="alert alert-warn">⚠️ 主管加權評分尚未開放，請等待服務滿意度評分全部完成後開啟</div>';
+    content.innerHTML=''; return;
+  }
+  if(flowConfig.stage>3){
+    alert.innerHTML='<div class="alert alert-info">ℹ️ 主管加權評分階段已結束</div>';
+  } else {
+    alert.innerHTML=`<div class="alert alert-warn">⚠️ 評分送出後不得修改。截止日：${flowConfig.mgrDeadline||'—'} ｜ 同一主管轄下總平均分 4.5 分以上人數，以不超過 30% 為原則</div>`;
+  }
+  const myRatees=ratees.filter(r=>r.mgrRaterId===u.id);
+  if(myRatees.length===0){ content.innerHTML='<div class="alert alert-info">ℹ️ 您目前沒有需要評分的受評者</div>'; return; }
+
+  // 30% 限制檢核
+  const highScoreLimit=Math.floor(myRatees.length*0.3)||1;
+
+  content.innerHTML=myRatees.map(r=>{
+    const mgr=mgrData[r.id];
+    const locked=mgr||flowConfig.stage>3;
+    const satList=Object.values(satData[r.id]||{});
+    const satAvg=satList.length>0?satList.reduce((s,x)=>s+(x.speed+x.prof+x.comm)/3,0)/satList.length:null;
+    const satRate=satAvg!==null?(satAvg/5)*40:null;
+    const sup=supportData[r.id];
+    const b=calcBonus(r);
+    return `<div class="card">
+      <div class="card-title">👤 ${r.name} <span style="font-size:.8rem;color:var(--text-light);">${r.id} ｜ ${r.dept} ｜ G${r.grade}</span>
+        ${locked?'<span class="tag tag-done" style="margin-left:8px;">已提交</span>':''}
+      </div>
+      <!-- 上一階段結果 -->
+      <div class="alert alert-purple" style="margin-bottom:12px;">
+        📊 服務滿意度：<b>${satAvg!==null?satAvg.toFixed(2)+' / 5（得分率 '+satRate.toFixed(1)+'%）':'尚無資料'}</b>
+        ｜ 支援比重：<b>${sup?.ratio||0}%</b>
+        ｜ 職務定價：<b>${getJobPrice(r.dept,r.grade).toLocaleString()} 元</b>
+      </div>
+      <div class="grid-2">
+        ${renderMgrScoreItem(r.id,'complex','工作複雜度與難度（30%）','本季是否承擔超出常規的任務或處理突發狀況',mgr?.complex||3,locked)}
+        ${renderMgrScoreItem(r.id,'initiative','主動性與改善貢獻（30%）','是否自主提出流程優化或問題預防',mgr?.initiative||3,locked)}
+        ${renderMgrScoreItem(r.id,'collab','跨單位協作品質（20%）','與其他部門及子公司溝通的效率與成果',mgr?.collab||3,locked)}
+        ${renderMgrScoreItem(r.id,'expertise','專業知識與正確性（20%）','作業產出的準確度與專業水準',mgr?.expertise||3,locked)}
+      </div>
+      ${!locked?`
+      <div id="lowWarn_${r.id}" style="display:none;" class="alert alert-warn">⚠️ 給予 2.5 分以下，請填寫具體行為描述（至少 50 字）</div>
+      <div id="lowDesc_${r.id}" style="display:none;" class="form-group">
+        <label>具體行為描述（必填，至少 50 字）</label>
+        <textarea id="lowText_${r.id}" rows="3" placeholder="請描述具體行為事實..." oninput="checkLow('${r.id}')"></textarea>
+        <div class="tip" id="lowCount_${r.id}" style="color:var(--danger);">已輸入 0 字</div>
+      </div>
+      <div class="btn-group"><button class="btn btn-success" onclick="submitMgr('${r.id}')">✅ 提交評分</button></div>`:''}
+      ${b?`<div style="margin-top:10px;padding:10px 14px;background:#f8fafc;border-radius:8px;font-size:.85rem;">
+        即時計算 → 綜合得分率：<b style="color:${b.perfRate>=0.5?'var(--success)':'var(--danger)'};">${pct(b.perfRate)}</b>
+        ｜ 預估本季獎金：<b style="color:var(--primary);">${fmt(b.total)} 元</b>
+        ${b.perfRate<0.5?'<span class="tag tag-locked" style="margin-left:8px;">浮動獎金取消</span>':''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+function renderMgrScoreItem(rateeId,field,label,tip,val,locked){
+  return `<div class="form-group">
+    <label>${label}</label>
+    <div class="tip" style="margin-bottom:6px;">${tip}</div>
+    <div class="score-btns" id="sb_${rateeId}_${field}">
+      ${[1,2,3,4,5].map(v=>`<button class="sbtn ${val===v?'active':''}" ${locked?'disabled':''} onclick="setMgrScore('${rateeId}','${field}',${v},this)">${v}</button>`).join('')}
+    </div>
+    <input type="hidden" id="ms_${rateeId}_${field}" value="${val}">
+  </div>`;
+}
+function setMgrScore(rateeId,field,val,btn){
+  document.getElementById(`ms_${rateeId}_${field}`).value=val;
+  document.getElementById(`sb_${rateeId}_${field}`).querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  checkLow(rateeId);
+  // 即時更新預估獎金
+  const r=ratees.find(x=>x.id===rateeId);
+  if(r){
+    const c=parseFloat(document.getElementById(`ms_${rateeId}_complex`)?.value||3);
+    const ini=parseFloat(document.getElementById(`ms_${rateeId}_initiative`)?.value||3);
+    const col=parseFloat(document.getElementById(`ms_${rateeId}_collab`)?.value||3);
+    const exp=parseFloat(document.getElementById(`ms_${rateeId}_expertise`)?.value||3);
+    const mgrRaw=c*0.3+ini*0.3+col*0.2+exp*0.2;
+    const satList=Object.values(satData[r.id]||{});
+    const satAvg=satList.length>0?satList.reduce((s,x)=>s+(x.speed+x.prof+x.comm)/3,0)/satList.length:3;
+    const satRate=(satAvg/5)*40;
+    const mgrRate=(mgrRaw/5)*60;
+    const perfRate=(satRate+mgrRate)/100;
+    const sup=supportData[r.id];
+    const ratio=(sup?.ratio||0)/100;
+    const price=getJobPrice(r.dept,r.grade);
+    const dayR=workDaysRatio(r.joinDate,flowConfig.quarter);
+    const total=(price*ratio*0.10+price*ratio*0.90*perfRate)*dayR;
+    // 找到即時顯示區
+    const cards=document.querySelectorAll('.card');
+    // 簡單更新：重新渲染
+  }
+}
+function checkLow(rateeId){
+  const fields=['complex','initiative','collab','expertise'];
+  const hasLow=fields.some(f=>parseInt(document.getElementById(`ms_${rateeId}_${f}`)?.value||3)<=2);
+  const warnEl=document.getElementById(`lowWarn_${rateeId}`);
+  const descEl=document.getElementById(`lowDesc_${rateeId}`);
+  if(warnEl) warnEl.style.display=hasLow?'flex':'none';
+  if(descEl) descEl.style.display=hasLow?'block':'none';
+  if(hasLow){
+    const txt=document.getElementById(`lowText_${rateeId}`)?.value||'';
+    const cnt=document.getElementById(`lowCount_${rateeId}`);
+    if(cnt){ cnt.textContent=`已輸入 ${txt.length} 字，需至少 50 字`; cnt.style.color=txt.length>=50?'var(--success)':'var(--danger)'; }
+  }
+}
+function submitMgr(rateeId){
+  const fields=['complex','initiative','collab','expertise'];
+  const vals={};
+  fields.forEach(f=>{ vals[f]=parseInt(document.getElementById(`ms_${rateeId}_${f}`)?.value||3); });
+  const minVal=Math.min(...Object.values(vals));
+  if(minVal<=2){
+    const txt=document.getElementById(`lowText_${rateeId}`)?.value||'';
+    if(txt.length<50){ alert('給予 2.5 分以下，請填寫至少 50 字的具體行為描述！'); return; }
+    vals.note=txt;
+  }
+  // 30% 限制檢核
+  const u=currentUser;
+  const myRatees=ratees.filter(r=>r.mgrRaterId===u.id);
+  const mgrRaw=vals.complex*0.3+vals.initiative*0.3+vals.collab*0.2+vals.expertise*0.2;
+  if(mgrRaw>=4.5){
+    const alreadyHigh=myRatees.filter(r=>r.id!==rateeId&&mgrData[r.id]).filter(r=>{
+      const m=mgrData[r.id];
+      return (m.complex*0.3+m.initiative*0.3+m.collab*0.2+m.expertise*0.2)>=4.5;
+    }).length;
+    const limit=Math.floor(myRatees.length*0.3)||1;
+    if(alreadyHigh>=limit){
+      if(!confirm(`⚠️ 注意：同一主管轄下總平均分 4.5 分以上人數，以不超過 30%（${limit} 人）為原則。目前已有 ${alreadyHigh} 人達到此標準，確定繼續？`)) return;
+    }
+  }
+  showConfirm('確認提交主管評分',`確定要提交對「${ratees.find(r=>r.id===rateeId)?.name}」的主管加權評分？送出後不得修改。`,()=>{
+    mgrData[rateeId]={...vals,submittedBy:u.id,submittedByName:u.name,submittedAt:new Date().toLocaleString('zh-TW')};
+    saveState('sys_mgr',mgrData);
+    renderMgrScore();
+  });
+}
+
+// ══════════════════════════════════════════
+// ⑮ 主管查看結果
+// ══════════════════════════════════════════
+function renderMgrView(){
+  const u=currentUser;
+  const myRatees=ratees.filter(r=>r.mgrRaterId===u.id);
+  const content=document.getElementById('mgrViewContent');
+  if(myRatees.length===0){ content.innerHTML='<div class="alert alert-info">ℹ️ 您目前沒有受評者</div>'; return; }
+  content.innerHTML=`
+  <div class="card">
+    <div class="card-title">📊 所屬受評者評核結果</div>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>工號</th><th>姓名</th><th>部門</th><th>職等</th><th class="td-center">支援比重</th><th class="td-center">服務滿意度</th><th class="td-center">主管評分</th><th class="td-center">綜合得分率</th><th class="td-num">預估獎金</th></tr></thead>
+      <tbody>${myRatees.map(r=>{
+        const b=calcBonus(r);
+        const sup=supportData[r.id];
+        const satList=Object.values(satData[r.id]||{});
+        const satAvg=satList.length>0?satList.reduce((s,x)=>s+(x.speed+x.prof+x.comm)/3,0)/satList.length:null;
+        const mgr=mgrData[r.id];
+        const mgrRaw=mgr?(mgr.complex*0.3+mgr.initiative*0.3+mgr.collab*0.2+mgr.expertise*0.2):null;
+        return `<tr>
+          <td><code>${r.id}</code></td><td><b>${r.name}</b></td><td style="font-size:.8rem;">${r.dept}</td>
+          <td class="td-center"><span class="tag ${r.grade<=5?'tag-g5':r.grade<=7?'tag-g67':'tag-g8'}">G${r.grade}</span></td>
+          <td class="td-center">${sup?.locked?sup.ratio+'%':'<span class="tag tag-pending">未設定</span>'}</td>
+          <td class="td-center">${satAvg!==null?satAvg.toFixed(2):'<span class="tag tag-pending">待評分</span>'}</td>
+          <td class="td-center">${mgrRaw!==null?mgrRaw.toFixed(2):'<span class="tag tag-pending">待評分</span>'}</td>
+          <td class="td-center" style="font-weight:700;color:${b&&b.perfRate>=0.5?'var(--success)':'var(--danger)'};">${b?pct(b.perfRate):'—'}</td>
+          <td class="td-num"><b style="color:var(--primary);">${b?fmt(b.total):'—'}</b></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// ⑯ Confirm Modal
+// ══════════════════════════════════════════
+let _confirmCb=null;
+function showConfirm(title,msg,cb){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  _confirmCb=cb;
+  document.getElementById('confirmModal').classList.remove('hidden');
+  document.getElementById('confirmOk').onclick=()=>{ closeConfirm(); if(_confirmCb) _confirmCb(); };
+}
+function closeConfirm(){ document.getElementById('confirmModal').classList.add('hidden'); }
+
+// ══════════════════════════════════════════
+// ⑰ 初始化
+// ══════════════════════════════════════════
+window.onload=function(){
+  // 確保 ratees 有最新資料
+  if(!loadState('sys_ratees',null)) saveState('sys_ratees',RATEES_INIT);
+};
+</script>
+</body>
+</html>
